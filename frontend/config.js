@@ -1,5 +1,4 @@
 // API Configuration - Change this when deploying!
-// For local development: "http://localhost:8000"
-// For production: Replace with your backend URL (e.g., "https://your-backend.onrender.com")
-var API_URL = "https://user-auth-final.onrender.com";
-
+var API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:8000"
+    : "https://user-auth-final.onrender.com";

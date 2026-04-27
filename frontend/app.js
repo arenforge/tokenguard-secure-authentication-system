@@ -161,7 +161,9 @@ async function loadUsers() {
         buttons += `<button onclick="deleteUser(${u.id})" class="delete-btn">Delete</button>`;
       }
       if (canWrite) {
-        buttons += `<button onclick="editPrompt(${u.id}, '${u.name}', '${u.email}')">Edit</button>`;
+        const escapedName = u.name.replace(/'/g, "\\'");
+        const escapedEmail = u.email.replace(/'/g, "\\'");
+        buttons += `<button onclick="editPrompt(${u.id}, '${escapedName}', '${escapedEmail}')">Edit</button>`;
       }
       if (!canWrite && !canDelete) {
         buttons += `<span style="color: #666; font-size: 12px;">Read only</span>`;
