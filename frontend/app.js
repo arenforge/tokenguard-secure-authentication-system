@@ -34,7 +34,12 @@ async function login() {
     const data = await res.json();
     
     if (!res.ok) {
-      document.getElementById('msg').innerText = data.detail || 'Login failed';
+      if (res.status === 401) {
+        alert('❌ Wrong Password or Email');
+        document.getElementById('msg').innerText = 'Invalid credentials';
+      } else {
+        document.getElementById('msg').innerText = data.detail || 'Login failed';
+      }
       return;
     }
     
@@ -74,6 +79,33 @@ function logout() {
 
 // 🆕 NEW: Check if user is already logged in (on page load)
 function checkAuth() {
+  // Check URL parameters first (for OAuth redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+  
+  if (token) {
+    authToken = token;
+    currentUser = {
+      id: urlParams.get('id'),
+      email: urlParams.get('email'),
+      role: urlParams.get('role')
+    };
+    
+    // Store token in localStorage for persistence
+    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    
+    // Clean up URL so the token doesn't stay in the address bar
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('mainSection').style.display = 'block';
+    document.getElementById('userRole').innerText = `Role: ${currentUser.role}`;
+    document.getElementById('msg').innerText = `✓ Logged in as ${currentUser.email} via Google`;
+    loadUsers();
+    return;
+  }
+
   const savedToken = localStorage.getItem('authToken');
   const savedUser = localStorage.getItem('currentUser');
   
@@ -92,6 +124,7 @@ async function register() {
   const name = document.getElementById('name').value;
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
+  const secret_code = document.getElementById('secretCode').value;
   
   if (!name || !email || !password) {
     document.getElementById('msg').innerText = 'Please fill all fields';
@@ -102,14 +135,17 @@ async function register() {
     const res = await fetch(API + '/register', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, email, password})
+      body: JSON.stringify({name, email, password, secret_code})
     });
     
     const data = await res.json();
     
     if (res.ok) {
+      const role = data.role || 'user';
+      const displayRole = role.charAt(0).toUpperCase() + role.slice(1);
+      alert(`🎉 Registration Successful!\nAssigned Role: ${displayRole}`);
       document.getElementById('msg').innerText = 
-        `✓ ${data.message}. Please login with your credentials.`;
+        `✓ ${data.message}. Please login.`;
       // Clear form
       document.getElementById('name').value = '';
       document.getElementById('email').value = '';
@@ -149,31 +185,48 @@ async function loadUsers() {
     const canDelete = userRole === 'admin';
     
     usersDiv.innerHTML = data.map(u => {
-      // Determine role based on email pattern (matching backend logic)
-      let role = 'user';
-      const emailLower = u.email.toLowerCase();
-      if (emailLower.includes('admin')) role = 'admin';
-      else if (emailLower.includes('mod') || emailLower.includes('moderator')) role = 'moderator';
-      
+      // Use real role from the database
+      const role = u.role || 'user';
+      const roleBadgeColor = role === 'admin' ? '#ef4444' : role === 'moderator' ? '#f59e0b' : '#10b981';
+
       // Build buttons based on permissions
       let buttons = '';
       if (canDelete) {
         buttons += `<button onclick="deleteUser(${u.id})" class="delete-btn">Delete</button>`;
       }
       if (canWrite) {
-        const escapedName = u.name.replace(/'/g, "\\'");
-        const escapedEmail = u.email.replace(/'/g, "\\'");
-        buttons += `<button onclick="editPrompt(${u.id}, '${escapedName}', '${escapedEmail}')">Edit</button>`;
+        // 🔐 Security Logic: Moderators cannot edit Admins
+        if (userRole === 'moderator' && role === 'admin') {
+          buttons += `<span style="color: #ef4444; font-size: 11px; font-weight: bold;">[PROTECTED ADMIN]</span>`;
+        } else {
+          const escapedName = u.name.replace(/'/g, "\\'");
+          const escapedEmail = u.email.replace(/'/g, "\\'");
+          buttons += `<button onclick="editPrompt(${u.id}, '${escapedName}', '${escapedEmail}')" class="edit-btn">Edit</button>`;
+        }
       }
       if (!canWrite && !canDelete) {
         buttons += `<span style="color: #666; font-size: 12px;">Read only</span>`;
       }
-      
+
+      // Admin-only: role change dropdown (cannot change own role)
+      let roleChanger = '';
+      if (canDelete && u.id !== currentUser.id) {
+        roleChanger = `
+          <select onchange="updateRole(${u.id}, this.value)" style="margin-top:6px; font-size:12px; padding:2px 6px;">
+            <option value="user"     ${role === 'user'      ? 'selected' : ''}>User</option>
+            <option value="moderator"${role === 'moderator' ? 'selected' : ''}>Moderator</option>
+            <option value="admin"    ${role === 'admin'     ? 'selected' : ''}>Admin</option>
+          </select>`;
+      }
+
       return `
       <div class="user-card">
         <b>${u.name}</b>
         <div>${u.email}</div>
-        <div style="color: #666; font-size: 12px;">Role: ${role}</div>
+        <div style="margin-top:4px;">
+          <span style="background:${roleBadgeColor}; color:#fff; padding:2px 8px; border-radius:12px; font-size:11px; text-transform:uppercase;">${role}</span>
+        </div>
+        ${roleChanger}
         <div style="margin-top:8px;">
           ${buttons}
         </div>
@@ -263,6 +316,33 @@ async function deleteUser(id) {
       loadUsers();
     } else {
       document.getElementById('msg').innerText = data.detail || 'Delete failed';
+    }
+  } catch (err) {
+    document.getElementById('msg').innerText = 'Error: ' + err.message;
+  }
+}
+
+// 🆕 NEW: Update user role (admin only)
+async function updateRole(id, newRole) {
+  if (!authToken) {
+    document.getElementById('msg').innerText = 'Please login first';
+    return;
+  }
+  try {
+    const res = await fetch(API + '/users/' + id + '/role', {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ role: newRole })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      document.getElementById('msg').innerText = '✓ ' + data.message;
+      loadUsers();  // Refresh the list
+    } else {
+      document.getElementById('msg').innerText = data.detail || 'Role update failed';
+      loadUsers();  // Revert dropdown to actual state
     }
   } catch (err) {
     document.getElementById('msg').innerText = 'Error: ' + err.message;
