@@ -74,6 +74,33 @@ function logout() {
 
 // 🆕 NEW: Check if user is already logged in (on page load)
 function checkAuth() {
+  // Check URL parameters first (for OAuth redirect)
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+  
+  if (token) {
+    authToken = token;
+    currentUser = {
+      id: urlParams.get('id'),
+      email: urlParams.get('email'),
+      role: urlParams.get('role')
+    };
+    
+    // Store token in localStorage for persistence
+    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    
+    // Clean up URL so the token doesn't stay in the address bar
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('mainSection').style.display = 'block';
+    document.getElementById('userRole').innerText = `Role: ${currentUser.role}`;
+    document.getElementById('msg').innerText = `✓ Logged in as ${currentUser.email} via Google`;
+    loadUsers();
+    return;
+  }
+
   const savedToken = localStorage.getItem('authToken');
   const savedUser = localStorage.getItem('currentUser');
   

@@ -2,10 +2,21 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
+import os
+import httpx
+from fastapi.responses import RedirectResponse
+from dotenv import load_dotenv
 from passlib.context import CryptContext
 from database import SessionLocal, engine, Base, User
 from jwt_auth import create_access_token, authenticate_user, get_current_user
 from rbac import Role, get_user_role, require_role, require_permission, check_permission
+
+load_dotenv()
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 # create DB tables if not present
 Base.metadata.create_all(bind=engine)
@@ -81,6 +92,48 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         "role": user_role.value,
         "message": "Login successful"
     }
+
+# --- OAUTH ENDPOINTS ---
+@app.get("/auth/google/login", tags=["OAuth"])
+def google_login():
+    url = f"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id={GOOGLE_CLIENT_ID}&redirect_uri={GOOGLE_REDIRECT_URI}&scope=openid%20profile%20email&access_type=offline"
+    return RedirectResponse(url)
+
+@app.get("/auth/google/callback", tags=["OAuth"])
+async def google_callback(code: str, db: Session = Depends(get_db)):
+    token_url = "https://oauth2.googleapis.com/token"
+    data = {
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(token_url, data=data)
+        access_token = response.json().get("access_token")
+        
+        user_info = await client.get("https://www.googleapis.com/oauth2/v1/userinfo", headers={"Authorization": f"Bearer {access_token}"})
+        user_data = user_info.json()
+        
+    email = user_data.get("email")
+    name = user_data.get("name")
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Failed to get email from Google")
+        
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(name=name, email=email, password="", role="user")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+    token = create_access_token(data={"sub": user.email})
+    role = get_user_role(user)
+    
+    return RedirectResponse(f"{FRONTEND_URL}?token={token}&email={user.email}&role={role.value}&id={user.id}")
+# -----------------------
 
 @app.get("/users", response_model=list[UserOut], tags=["Users"])
 def list_users(current_user: User = Depends(require_permission("read")), db: Session = Depends(get_db)):
