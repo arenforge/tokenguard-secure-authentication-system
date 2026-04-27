@@ -29,10 +29,8 @@
           <input id="name" placeholder="Full name" />
           <input id="email" placeholder="Email (e.g., admin@example.com)" type="email" />
           <input id="password" placeholder="Password" type="password" />
-          <small style="color: #666; display: block; margin-top: 8px;">
-            💡 Tip: Use "admin@" in email for admin role, "mod@" for moderator role
-          </small>
-          <button onclick="register()">Register</button>
+          <input id="secretCode" placeholder="Secret Role Code (Optional)" type="text" style="margin-top: 10px; border: 1px dashed #3b82f6;" />
+          <button onclick="register()" style="margin-top: 15px;">Register</button>
         </div>
       </div>
     </div>
@@ -61,16 +59,25 @@
       <div id="users" class="grid"></div>
     </div>
 
-    <!-- Info Section -->
-    <div class="card" style="margin-top: 24px; background: #fef3c7; border-left: 4px solid #f59e0b;">
-      <h4 style="margin-top: 0;">ℹ️ Role Permissions & How Roles Work</h4>
-      <ul style="margin: 0; padding-left: 20px;">
-        <li><b>Admin:</b> Email contains "admin" → Can read, write, delete, and manage roles</li>
-        <li><b>Moderator:</b> Email contains "mod" or "moderator" → Can read and write (edit users)</li>
-        <li><b>User:</b> Default → Can only read (view users)</li>
-      </ul>
-      <p style="margin: 12px 0 0 0; color: #92400e;">
-        <b>Examples:</b> admin@test.com (admin), moderator@test.com (moderator), user@test.com (user)
+    <!-- 🌟 Clean Role Permissions Guide -->
+    <div class="card" style="margin-top: 24px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 14px;">
+      <h4 style="margin-top: 0; color: #1e293b;">🔐 Role Permissions Guide</h4>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+        <div style="padding: 10px; border-radius: 8px; background: #fee2e2;">
+          <b style="color: #991b1b;">Admin</b><br>
+          Full control. Can edit, delete, and change roles.
+        </div>
+        <div style="padding: 10px; border-radius: 8px; background: #fef3c7;">
+          <b style="color: #92400e;">Moderator</b><br>
+          Staff role. Can edit user details but cannot delete.
+        </div>
+        <div style="padding: 10px; border-radius: 8px; background: #dcfce7;">
+          <b style="color: #166534;">User</b><br>
+          Member role. Read-only access to the user list.
+        </div>
+      </div>
+      <p style="margin: 15px 0 0 0; color: #64748b; font-style: italic;">
+        *To register as Admin/Moderator, use your secret invite code in the registration form.
       </p>
     </div>
   </div>

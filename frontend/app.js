@@ -34,7 +34,12 @@ async function login() {
     const data = await res.json();
     
     if (!res.ok) {
-      document.getElementById('msg').innerText = data.detail || 'Login failed';
+      if (res.status === 401) {
+        alert('❌ Wrong Password or Email');
+        document.getElementById('msg').innerText = 'Invalid credentials';
+      } else {
+        document.getElementById('msg').innerText = data.detail || 'Login failed';
+      }
       return;
     }
     
@@ -119,6 +124,7 @@ async function register() {
   const name = document.getElementById('name').value;
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
+  const secret_code = document.getElementById('secretCode').value;
   
   if (!name || !email || !password) {
     document.getElementById('msg').innerText = 'Please fill all fields';
@@ -129,14 +135,17 @@ async function register() {
     const res = await fetch(API + '/register', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, email, password})
+      body: JSON.stringify({name, email, password, secret_code})
     });
     
     const data = await res.json();
     
     if (res.ok) {
+      const role = data.role || 'user';
+      const displayRole = role.charAt(0).toUpperCase() + role.slice(1);
+      alert(`🎉 Registration Successful!\nAssigned Role: ${displayRole}`);
       document.getElementById('msg').innerText = 
-        `✓ ${data.message}. Please login with your credentials.`;
+        `✓ ${data.message}. Please login.`;
       // Clear form
       document.getElementById('name').value = '';
       document.getElementById('email').value = '';
@@ -178,7 +187,7 @@ async function loadUsers() {
     usersDiv.innerHTML = data.map(u => {
       // Use real role from the database
       const role = u.role || 'user';
-      const roleBadgeColor = role === 'admin' ? '#e74c3c' : role === 'moderator' ? '#f39c12' : '#27ae60';
+      const roleBadgeColor = role === 'admin' ? '#ef4444' : role === 'moderator' ? '#f59e0b' : '#10b981';
 
       // Build buttons based on permissions
       let buttons = '';
@@ -186,9 +195,14 @@ async function loadUsers() {
         buttons += `<button onclick="deleteUser(${u.id})" class="delete-btn">Delete</button>`;
       }
       if (canWrite) {
-        const escapedName = u.name.replace(/'/g, "\\'");
-        const escapedEmail = u.email.replace(/'/g, "\\'");
-        buttons += `<button onclick="editPrompt(${u.id}, '${escapedName}', '${escapedEmail}')">Edit</button>`;
+        // 🔐 Security Logic: Moderators cannot edit Admins
+        if (userRole === 'moderator' && role === 'admin') {
+          buttons += `<span style="color: #ef4444; font-size: 11px; font-weight: bold;">[PROTECTED ADMIN]</span>`;
+        } else {
+          const escapedName = u.name.replace(/'/g, "\\'");
+          const escapedEmail = u.email.replace(/'/g, "\\'");
+          buttons += `<button onclick="editPrompt(${u.id}, '${escapedName}', '${escapedEmail}')" class="edit-btn">Edit</button>`;
+        }
       }
       if (!canWrite && !canDelete) {
         buttons += `<span style="color: #666; font-size: 12px;">Read only</span>`;

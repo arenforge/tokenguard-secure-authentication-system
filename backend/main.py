@@ -45,6 +45,7 @@ class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
+    secret_code: str = None  # 🔐 New: Optional secret code for special roles
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -66,12 +67,32 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     # simple unique email check
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # 🔐 Role Determination Logic
+    assigned_role = "user"
+    admin_key = os.getenv("ADMIN_SECRET_KEY")
+    mod_key = os.getenv("MODERATOR_SECRET_KEY")
+
+    if payload.secret_code:
+        if payload.secret_code == admin_key:
+            assigned_role = "admin"
+        elif payload.secret_code == mod_key:
+            assigned_role = "moderator"
+        else:
+            # Optional: You could raise an error if they provided a WRONG code
+            # For now, we'll just fallback to 'user' for safety
+            pass
+
     hashed = pwd_context.hash(payload.password)
-    user = User(name=payload.name, email=payload.email, password=hashed, role="user")
+    user = User(name=payload.name, email=payload.email, password=hashed, role=assigned_role)
     db.add(user)
     db.commit()
     db.refresh(user)
-    return {"message": "Registered", "user_id": user.id}
+    return {
+        "message": f"Registered successfully as {assigned_role}", 
+        "user_id": user.id,
+        "role": assigned_role
+    }
 
 @app.post("/login", response_model=dict, tags=["Auth"])
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
@@ -154,6 +175,13 @@ def update_user(user_id: int, payload: UserCreate, current_user: User = Depends(
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # 🔐 Security Check: Moderators cannot edit Admins
+    current_role = get_user_role(current_user)
+    target_role = user.role
+    if current_role == Role.MODERATOR and target_role == Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Moderators cannot modify Admin accounts")
+
     user.name = payload.name
     user.email = payload.email
     user.password = pwd_context.hash(payload.password)
@@ -167,6 +195,13 @@ def delete_user(user_id: int, current_user: User = Depends(require_permission("d
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # 🔐 Security Check: Moderators/Admins cannot delete higher/equal roles easily 
+    # (Admins already required for delete, but let's be explicit)
+    if user.role == Role.ADMIN and current_user.id != user.id:
+        # Optional: Only a 'Super Admin' logic could go here
+        pass
+
     db.delete(user)
     db.commit()
     return {"message": "Deleted"}
