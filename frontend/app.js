@@ -149,12 +149,10 @@ async function loadUsers() {
     const canDelete = userRole === 'admin';
     
     usersDiv.innerHTML = data.map(u => {
-      // Determine role based on email pattern (matching backend logic)
-      let role = 'user';
-      const emailLower = u.email.toLowerCase();
-      if (emailLower.includes('admin')) role = 'admin';
-      else if (emailLower.includes('mod') || emailLower.includes('moderator')) role = 'moderator';
-      
+      // Use real role from the database
+      const role = u.role || 'user';
+      const roleBadgeColor = role === 'admin' ? '#e74c3c' : role === 'moderator' ? '#f39c12' : '#27ae60';
+
       // Build buttons based on permissions
       let buttons = '';
       if (canDelete) {
@@ -168,12 +166,26 @@ async function loadUsers() {
       if (!canWrite && !canDelete) {
         buttons += `<span style="color: #666; font-size: 12px;">Read only</span>`;
       }
-      
+
+      // Admin-only: role change dropdown (cannot change own role)
+      let roleChanger = '';
+      if (canDelete && u.id !== currentUser.id) {
+        roleChanger = `
+          <select onchange="updateRole(${u.id}, this.value)" style="margin-top:6px; font-size:12px; padding:2px 6px;">
+            <option value="user"     ${role === 'user'      ? 'selected' : ''}>User</option>
+            <option value="moderator"${role === 'moderator' ? 'selected' : ''}>Moderator</option>
+            <option value="admin"    ${role === 'admin'     ? 'selected' : ''}>Admin</option>
+          </select>`;
+      }
+
       return `
       <div class="user-card">
         <b>${u.name}</b>
         <div>${u.email}</div>
-        <div style="color: #666; font-size: 12px;">Role: ${role}</div>
+        <div style="margin-top:4px;">
+          <span style="background:${roleBadgeColor}; color:#fff; padding:2px 8px; border-radius:12px; font-size:11px; text-transform:uppercase;">${role}</span>
+        </div>
+        ${roleChanger}
         <div style="margin-top:8px;">
           ${buttons}
         </div>
@@ -263,6 +275,33 @@ async function deleteUser(id) {
       loadUsers();
     } else {
       document.getElementById('msg').innerText = data.detail || 'Delete failed';
+    }
+  } catch (err) {
+    document.getElementById('msg').innerText = 'Error: ' + err.message;
+  }
+}
+
+// 🆕 NEW: Update user role (admin only)
+async function updateRole(id, newRole) {
+  if (!authToken) {
+    document.getElementById('msg').innerText = 'Please login first';
+    return;
+  }
+  try {
+    const res = await fetch(API + '/users/' + id + '/role', {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ role: newRole })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      document.getElementById('msg').innerText = '✓ ' + data.message;
+      loadUsers();  // Refresh the list
+    } else {
+      document.getElementById('msg').innerText = data.detail || 'Role update failed';
+      loadUsers();  // Revert dropdown to actual state
     }
   } catch (err) {
     document.getElementById('msg').innerText = 'Error: ' + err.message;

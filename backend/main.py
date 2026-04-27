@@ -43,8 +43,12 @@ class UserOut(BaseModel):
     id: int
     name: str
     email: EmailStr
+    role: str
     class Config:
         from_attributes = True
+
+class RoleUpdate(BaseModel):
+    role: str
 
 @app.post("/register", response_model=dict, tags=["Auth"])
 def register(payload: UserCreate, db: Session = Depends(get_db)):
@@ -52,7 +56,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     hashed = pwd_context.hash(payload.password)
-    user = User(name=payload.name, email=payload.email, password=hashed)
+    user = User(name=payload.name, email=payload.email, password=hashed, role="user")
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -114,11 +118,34 @@ def delete_user(user_id: int, current_user: User = Depends(require_permission("d
     db.commit()
     return {"message": "Deleted"}
 
+@app.patch("/users/{user_id}/role", response_model=dict, tags=["Users"])
+def update_user_role(
+    user_id: int,
+    payload: RoleUpdate,
+    current_user: User = Depends(require_role([Role.ADMIN])),
+    db: Session = Depends(get_db)
+):
+    """Update a user's role - Admin only. Valid roles: user, moderator, admin"""
+    valid_roles = [r.value for r in Role]
+    if payload.role not in valid_roles:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}"
+        )
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Admins cannot change their own role")
+    user.role = payload.role
+    db.commit()
+    return {"message": f"Role updated to '{payload.role}' for user {user_id}"}
+
 # RBAC Demo Endpoints (requires JWT authentication)
 
 @app.get("/admin-only", tags=["RBAC Demo"])
 def admin_only_endpoint(current_user: User = Depends(require_role([Role.ADMIN]))):
-    """Only accessible by admin users (email contains 'admin')"""
+    """Only accessible by admin users"""
     return {"message": "Admin access granted", "user": current_user.email}
 
 @app.get("/moderator-or-admin", tags=["RBAC Demo"])

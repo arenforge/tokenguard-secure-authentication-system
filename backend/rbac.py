@@ -41,22 +41,20 @@ def require_role(allowed_roles: list[Role]):
     return role_checker
 
 def get_user_role(user: User) -> Role:
-    """Get user role (simplified - in production, store role in database)"""
-    # Simple implementation: admin if email contains 'admin', moderator if contains 'mod', else user
-    email_lower = user.email.lower()
-    if "admin" in email_lower:
-        return Role.ADMIN
-    elif "mod" in email_lower or "moderator" in email_lower:
-        return Role.MODERATOR
-    else:
+    """Get user role from database"""
+    try:
+        return Role(user.role)
+    except ValueError:
         return Role.USER
 
 def assign_role(user_id: int, role: Role, db: Session):
-    """Assign role to user (simplified - in production, update role in database)"""
+    """Assign role to user in database"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # In production, update user.role = role.value
+    user.role = role.value
+    db.commit()
+    db.refresh(user)
     return {"message": f"Role {role.value} assigned to user {user_id}"}
 
 def check_permission(user: User, permission: str) -> bool:
