@@ -1,91 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>User Auth & Profiles</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ebolt | Secure Auth</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <h1>User Auth & Profiles</h1>
     
-    <!-- 🆕 NEW: Login Section -->
-    <div id="loginSection">
-      <div class="row">
-        <div class="card">
-          <h3>🔐 Login</h3>
-          <input id="loginEmail" placeholder="Email" type="email" />
-          <input id="loginPassword" placeholder="Password" type="password" />
-          <button onclick="login()">Login</button>
-          <hr style="margin: 16px 0; border: 1px solid #eee;">
-          <button onclick="window.location.href='http://localhost:8000/auth/google/login'" style="background: #ffffff; color: #757575; border: 1px solid #ddd;">
-            <img src="https://img.icons8.com/color/16/000000/google-logo.png" style="vertical-align: middle; margin-right: 8px;">
-            Sign in with Google
-          </button>
+    <!-- 🔐 Authentication Section -->
+    <div id="authSection">
+      <div class="card">
+        
+        <!-- 🟢 LOGIN FORM (Default) -->
+        <div id="loginForm">
+          <h3>Sign in with email</h3>
+          <p class="subtext">Securely access your account to manage your documents and team data. For free.</p>
+          
+          <div class="input-group">
+            <input id="loginEmail" placeholder="Email" type="email" />
+          </div>
+          <div class="input-group">
+            <input id="loginPassword" placeholder="Password" type="password" />
+          </div>
+          
+          <div style="text-align: right; margin-bottom: 20px;">
+            <a href="#" style="font-size: 13px; color: #6b7280; text-decoration: none;">Forgot password?</a>
+          </div>
+          
+          <button onclick="login()">Get Started</button>
+          
+          <div style="margin: 24px 0 10px; font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">Or sign in with:</div>
+          
+          <div class="social-login">
+            <div class="social-icon" style="width: 100%; border-radius: 12px; gap: 10px; padding: 0 20px;" onclick="window.location.href='http://localhost:8000/auth/google/login'">
+              <img src="https://img.icons8.com/color/24/000000/google-logo.png" />
+              <span style="font-size: 14px; font-weight: 500; color: #374151;">Google</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+            Don't have an account? <a href="#" onclick="toggleAuth(true)" style="color: var(--accent); font-weight: 600; text-decoration: none;">Create an account</a>
+          </div>
         </div>
 
-        <div class="card">
-          <h3>📝 Register New User</h3>
-          <input id="name" placeholder="Full name" />
-          <input id="email" placeholder="Email (e.g., admin@example.com)" type="email" />
-          <input id="password" placeholder="Password" type="password" />
-          <input id="secretCode" placeholder="Secret Role Code (Optional)" type="text" style="margin-top: 10px; border: 1px dashed #3b82f6;" />
-          <button onclick="register()" style="margin-top: 15px;">Register</button>
+        <!-- 🔵 REGISTRATION FORM (Hidden by default) -->
+        <div id="registerForm" style="display: none;">
+          <h3>Create an account</h3>
+          <p class="subtext">Join Ebolt to start managing your team and projects with high-level security.</p>
+          
+          <div class="input-group">
+            <input id="name" placeholder="Full name" />
+          </div>
+          <div class="input-group">
+            <input id="email" placeholder="Email" type="email" />
+          </div>
+          <div class="input-group">
+            <input id="password" placeholder="Password" type="password" />
+          </div>
+          <div class="input-group">
+            <input id="secretCode" placeholder="Secret Role Code (Optional)" type="text" style="border: 1px dashed var(--accent);" />
+          </div>
+          
+          <button onclick="register()">Register Now</button>
+          
+          <div style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+            Already have an account? <a href="#" onclick="toggleAuth(false)" style="color: var(--accent); font-weight: 600; text-decoration: none;">Sign in</a>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 🆕 NEW: Main Section (shown after login) -->
+    <!-- 🆕 Main Section (Dashboard) -->
     <div id="mainSection" style="display: none;">
-      <div class="card" style="background: #f0f9ff; border: 2px solid #3b82f6;">
+      <div class="card" style="margin-bottom: 24px; padding: 24px; text-align: left;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <span style="font-weight: bold;">✓ Logged In</span>
-            <span id="userRole" style="margin-left: 12px; color: #3b82f6;"></span>
+            <h2 style="margin: 0;">Welcome Back</h2>
+            <p id="userRoleDisplay" style="margin: 5px 0 0; color: var(--accent); font-weight: 500;"></p>
           </div>
-          <button onclick="logout()" style="background: #ef4444;">Logout</button>
+          <button onclick="logout()" style="width: auto; padding: 8px 20px; background: #ef4444;">Logout</button>
         </div>
       </div>
 
-      <div class="row">
-        <div class="card">
-          <h3>👥 User Profiles</h3>
-          <button onclick="loadUsers()">Refresh Users</button>
-          <div id="msg" class="msg"></div>
-        </div>
+      <div class="card" style="text-align: left; padding: 30px;">
+        <h3 style="margin-bottom: 20px;">👥 Team Members</h3>
+        <button onclick="loadUsers()" style="width: auto; background: var(--accent);">Refresh Database</button>
+        <div id="msg" class="msg"></div>
+        <div id="users" class="grid"></div>
       </div>
 
-      <h3>All Users</h3>
-      <div id="users" class="grid"></div>
-    </div>
-
-    <!-- 🌟 Clean Role Permissions Guide -->
-    <div class="card" style="margin-top: 24px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 14px;">
-      <h4 style="margin-top: 0; color: #1e293b;">🔐 Role Permissions Guide</h4>
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-        <div style="padding: 10px; border-radius: 8px; background: #fee2e2;">
-          <b style="color: #991b1b;">Admin</b><br>
-          Full control. Can edit, delete, and change roles.
-        </div>
-        <div style="padding: 10px; border-radius: 8px; background: #fef3c7;">
-          <b style="color: #92400e;">Moderator</b><br>
-          Staff role. Can edit user details but cannot delete.
-        </div>
-        <div style="padding: 10px; border-radius: 8px; background: #dcfce7;">
-          <b style="color: #166534;">User</b><br>
-          Member role. Read-only access to the user list.
+      <!-- Role Permissions Guide -->
+      <div class="card" style="margin-top: 24px; background: rgba(255,255,255,0.4); text-align: left; padding: 24px;">
+        <h4 style="margin-top: 0;">🔐 Role Permissions Guide</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; font-size: 13px;">
+          <div style="padding: 12px; border-radius: 12px; background: #fee2e2;"><b>Admin:</b> Full Access</div>
+          <div style="padding: 12px; border-radius: 12px; background: #fef3c7;"><b>Moderator:</b> Edit Access</div>
+          <div style="padding: 12px; border-radius: 12px; background: #dcfce7;"><b>User:</b> View Access</div>
         </div>
       </div>
-      <p style="margin: 15px 0 0 0; color: #64748b; font-style: italic;">
-        *To register as Admin/Moderator, use your secret invite code in the registration form.
-      </p>
     </div>
   </div>
 
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script>
-    // Check authentication on page load
+    // Toggle between Login and Register
+    function toggleAuth(showRegister) {
+      document.getElementById('loginForm').style.display = showRegister ? 'none' : 'block';
+      document.getElementById('registerForm').style.display = showRegister ? 'block' : 'none';
+    }
+    
     checkAuth();
   </script>
 </body>

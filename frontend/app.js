@@ -55,9 +55,9 @@ async function login() {
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     
     document.getElementById('msg').innerText = `✓ Logged in as ${data.email} (${data.role})`;
-    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('authSection').style.display = 'none';
     document.getElementById('mainSection').style.display = 'block';
-    document.getElementById('userRole').innerText = `Role: ${data.role}`;
+    document.getElementById('userRoleDisplay').innerText = `Role: ${data.role}`;
     
     loadUsers();  // Auto-load users after login
   } catch (err) {
@@ -71,7 +71,7 @@ function logout() {
   currentUser = null;
   localStorage.removeItem('authToken');
   localStorage.removeItem('currentUser');
-  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('authSection').style.display = 'block';
   document.getElementById('mainSection').style.display = 'none';
   document.getElementById('msg').innerText = 'Logged out';
   document.getElementById('users').innerHTML = '';
@@ -98,9 +98,9 @@ function checkAuth() {
     // Clean up URL so the token doesn't stay in the address bar
     window.history.replaceState({}, document.title, window.location.pathname);
     
-    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('authSection').style.display = 'none';
     document.getElementById('mainSection').style.display = 'block';
-    document.getElementById('userRole').innerText = `Role: ${currentUser.role}`;
+    document.getElementById('userRoleDisplay').innerText = `Role: ${currentUser.role}`;
     document.getElementById('msg').innerText = `✓ Logged in as ${currentUser.email} via Google`;
     loadUsers();
     return;
@@ -112,9 +112,9 @@ function checkAuth() {
   if (savedToken && savedUser) {
     authToken = savedToken;
     currentUser = JSON.parse(savedUser);
-    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('authSection').style.display = 'none';
     document.getElementById('mainSection').style.display = 'block';
-    document.getElementById('userRole').innerText = `Role: ${currentUser.role}`;
+    document.getElementById('userRoleDisplay').innerText = `Role: ${currentUser.role}`;
     loadUsers();
   }
 }
@@ -223,8 +223,8 @@ async function loadUsers() {
       <div class="user-card">
         <b>${u.name}</b>
         <div>${u.email}</div>
-        <div style="margin-top:4px;">
-          <span style="background:${roleBadgeColor}; color:#fff; padding:2px 8px; border-radius:12px; font-size:11px; text-transform:uppercase;">${role}</span>
+        <div style="margin-top:8px;">
+          <span class="badge" style="background:${roleBadgeColor}; color:#fff;">${role}</span>
         </div>
         ${roleChanger}
         <div style="margin-top:8px;">
