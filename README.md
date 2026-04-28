@@ -1,100 +1,154 @@
-# User Auth & Profiles
+# 🚀 TokenGuard – Secure Authentication & User Management System
 
-A simple FastAPI backend with JWT authentication, RBAC (Role-Based Access Control), and a vanilla JavaScript frontend.
+> A FastAPI-powered authentication system with JWT, RBAC, and a vanilla JavaScript frontend.
 
-## Features
+---
 
-- ✅ User Registration & Login with JWT tokens
-- ✅ Role-Based Access Control (Admin, Moderator, User)
-- ✅ User Profile Management
-- ✅ Secure password hashing (bcrypt)
-- ✅ RESTful API with Swagger documentation
-- ✅ Modern frontend with authentication flow
+## 🌐 Live Demo
 
-## Quick Start (Local)
+🔗 Frontend: [https://tokenguard-secure-authentication-sy.vercel.app/](https://tokenguard-secure-authentication-sy.vercel.app/)
+🔗 Backend API: [https://tokenguard-secure-authentication-system-production.up.railway.app](https://tokenguard-secure-authentication-system-production.up.railway.app)
 
-1. **Create virtual environment**:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+---
 
-2. **Install dependencies**:
-   ```bash
-   pip install -r backend/requirements.txt
-   ```
+## 📌 Overview
 
-3. **Run backend**:
-   ```bash
-   cd backend
-   uvicorn main:app --reload
-   ```
-   Backend runs on: http://localhost:8000
+**TokenGuard** is a lightweight authentication system designed for secure user management and role-based access.
 
-4. **Open frontend**:
-   - Open `frontend/index.html` in your browser
-   - Or serve it: `python -m http.server 3000` (in frontend folder)
+* 🔐 JWT-based authentication
+* 👥 Role-Based Access Control (Admin / Moderator / User)
+* ⚡ FastAPI backend with auto-generated API docs
+* 🎨 Clean frontend with complete auth flow
 
-5. **API Documentation**:
-   - Swagger UI: http://localhost:8000/docs
-   - ReDoc: http://localhost:8000/redoc
+---
 
-## 🚀 Deployment
+## ✨ Features
 
-**See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions!**
+### 🔐 Authentication
 
-### Quick Deploy (Easiest Method):
+* User registration & login
+* Secure password hashing (bcrypt)
+* JWT token generation & validation
 
-1. **Backend**: Deploy to [Render.com](https://render.com) (free)
-   - Connect GitHub repo
-   - Set build command: `pip install -r backend/requirements.txt`
-   - Set start command: `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
+### 👥 Authorization
 
-2. **Frontend**: Deploy to [Netlify](https://netlify.com) (free)
-   - Drag & drop `frontend` folder
-   - Update `frontend/config.js` with your backend URL
-   - Redeploy
+* **Admin** → Full access
+* **Moderator** → Read & update
+* **User** → Read-only
 
-3. **Done!** Your app is live and accessible to everyone! 🎉
+### 👤 User Management
 
-## Project Structure
+* Get all users
+* Get user by ID
+* Update user
+* Delete user (admin only)
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer      | Tech                                 |
+| ---------- | ------------------------------------ |
+| Backend    | FastAPI (Python)                     |
+| Auth       | JWT, bcrypt                          |
+| Database   | SQLite                               |
+| Frontend   | HTML, CSS, JavaScript                |
+| Deployment | Railway (Backend), Vercel (Frontend) |
+
+---
+
+## 📂 Project Structure
 
 ```
 .
 ├── backend/
-│   ├── main.py           # FastAPI application
-│   ├── database.py      # Database models
-│   ├── jwt_auth.py      # JWT authentication
-│   ├── rbac.py          # Role-Based Access Control
-│   ├── requirements.txt # Python dependencies
-│   └── users.db         # SQLite database (created automatically)
+│   ├── main.py
+│   ├── database.py
+│   ├── jwt_auth.py
+│   ├── rbac.py
+│   ├── requirements.txt
+│   └── users.db
+│
 ├── frontend/
-│   ├── index.html       # Main HTML file
-│   ├── app.js           # Frontend JavaScript
-│   ├── style.css        # Styles
-│   └── config.js        # API configuration (update for deployment!)
-├── DEPLOYMENT.md        # Detailed deployment guide
-└── README.md           # This file
+│   ├── index.html
+│   ├── app.js
+│   ├── style.css
+│   └── config.js
+│
+├── DEPLOYMENT.md
+└── README.md
 ```
 
-## Role Permissions
+---
 
-- **Admin** (email contains "admin"): Full access (read, write, delete)
-- **Moderator** (email contains "mod"): Can read and write (edit users)
-- **User** (default): Read-only access
+## ⚙️ Local Setup
 
-## API Endpoints
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
 
-- `POST /register` - Register new user
-- `POST /login` - Login and get JWT token
-- `GET /users` - List all users (requires auth)
-- `GET /users/{id}` - Get user by ID (requires auth)
-- `PUT /users/{id}` - Update user (requires write permission)
-- `DELETE /users/{id}` - Delete user (requires admin permission)
+cd backend
+uvicorn main:app --reload
+```
 
-## Notes
+👉 [http://localhost:8000](http://localhost:8000)
 
-- Database is SQLite (`backend/users.db`) - automatically created
-- Passwords are hashed using bcrypt
-- JWT tokens expire after 30 minutes
-- CORS is enabled for all origins (configure for production)
+```bash
+cd frontend
+python -m http.server 3000
+```
+
+👉 [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 📖 API Docs
+
+* Swagger → [http://localhost:8000/docs](http://localhost:8000/docs)
+* ReDoc → [http://localhost:8000/redoc](http://localhost:8000/redoc)
+
+---
+
+## 🔌 API Endpoints
+
+### Auth
+
+* `POST /register`
+* `POST /login`
+
+### Users
+
+* `GET /users`
+* `GET /users/{id}`
+* `PUT /users/{id}`
+* `DELETE /users/{id}`
+
+---
+
+## 🚀 Deployment
+
+### Backend
+
+```bash
+cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+### Frontend
+
+```js
+API_URL = "https://tokenguard-secure-authentication-system-production.up.railway.app"
+```
+
+---
+
+## 👨‍💻 Authors
+
+* **Arhan Khan**
+
+
+---
+
+## ⭐ Support
+
+If you found this useful, consider giving it a ⭐ on GitHub.
